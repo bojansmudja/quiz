@@ -100,87 +100,94 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div>
-        <p>Loading Quiz Questions...</p>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-500 to-purple-600 text-white text-2xl font-bold">
+        Loading Quiz Questions...
       </div>
     );
   }
 
   if (showScore) {
     return (
-      <div>
-        <h2>Quiz Results</h2>
-        <p>Score: {score} out of {questions.length}</p>
-        <p>{(score / questions.length * 100).toFixed(1)}%</p>
-        {answers.map((answer, index) => (
-          <div key={index}>
-            <p>Question {index + 1}: {answer.question}</p>
-            <p>{answer.isCorrect ? 'Correct' : 'Incorrect'}</p>
-            <p>Your answer: {answer.selected}</p>
-            {!answer.isCorrect && <p>Correct answer: {answer.correct}</p>}
-            <p>{answer.explanation}</p>
-          </div>
-        ))}
+      <div className="p-8 bg-gradient-to-r from-purple-600 to-blue-500 min-h-screen text-white">
+        <h2 className="text-4xl font-bold text-center mb-6">Quiz Results</h2>
+        <p className="text-center text-2xl mb-4">Score: {score} out of {questions.length}</p>
+        <p className="text-center text-xl mb-8">{(score / questions.length * 100).toFixed(1)}%</p>
+        <div className="space-y-4">
+          {answers.map((answer, index) => (
+            <div key={index} className={`p-4 rounded-lg ${answer.isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+              <p className="font-semibold">Question {index + 1}: {answer.question}</p>
+              <p>Your answer: {answer.selected}</p>
+              {!answer.isCorrect && <p>Correct answer: {answer.correct}</p>}
+              <p className="italic">{answer.explanation}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1>Psychology Admission Quiz</h1>
-      <div>
-        <p>Question {currentQuestion + 1}/{questions.length}</p>
-        <p>Time: {formatTime(timeLeft)}</p>
-        <div
-          className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
-          style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-        />
-      </div>
-      <p>{questions[currentQuestion].question}</p>
-      <div>
-        {questions[currentQuestion].options.map((option, index) => (
-          <label
-            key={index}
-            className={`p-4 rounded-xl cursor-pointer transition-all duration-200 
-              border-2 hover:shadow-md
-              ${selectedAnswer === index 
-                ? 'border-purple-500 bg-purple-50 shadow-md' 
-                : 'border-gray-200 hover:border-purple-200'
-              }`}
-          >
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
-              ${selectedAnswer === index 
-                ? 'border-purple-500 bg-purple-500' 
-                : 'border-gray-300'
-              }`}
+    <div className="min-h-screen p-8 bg-gradient-to-r from-purple-600 to-blue-500 text-white flex flex-col items-center">
+      <h1 className="text-5xl font-bold mb-8 text-center">Psychology Admission Quiz</h1>
+      <div className="w-full max-w-2xl bg-gray-800 p-6 rounded-xl shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-xl">Question {currentQuestion + 1}/{questions.length}</p>
+          <p className="text-xl">Time Left: {formatTime(timeLeft)}</p>
+        </div>
+        <div className="h-4 bg-gray-300 rounded-full overflow-hidden mb-6">
+          <div 
+            className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-300"
+            style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+          />
+        </div>
+        <p className="text-2xl font-semibold mb-4">{questions[currentQuestion].question}</p>
+        <div className="space-y-4">
+          {questions[currentQuestion].options.map((option, index) => (
+            <label
+              key={index}
+              className={`block p-4 rounded-xl cursor-pointer transition-all duration-200 
+                border-2 hover:shadow-lg
+                ${selectedAnswer === index 
+                  ? 'border-purple-500 bg-purple-600 shadow-md' 
+                  : 'border-gray-500 hover:border-purple-400'
+                }`}
             >
-              {selectedAnswer === index && (
-                <div className="w-2 h-2 bg-white rounded-full" />
-              )}
-            </div>
-            <input
-              type="radio"
-              name="answer"
-              className="hidden"
-              checked={selectedAnswer === index}
-              onChange={() => handleAnswer(index)}
-            />
-            {option}
-          </label>
-        ))}
+              <div className="flex items-center">
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3
+                  ${selectedAnswer === index 
+                    ? 'border-white bg-white' 
+                    : 'border-gray-400'
+                  }`}
+                >
+                  {selectedAnswer === index && (
+                    <div className="w-3 h-3 bg-purple-600 rounded-full" />
+                  )}
+                </div>
+                <input
+                  type="radio"
+                  name="answer"
+                  className="hidden"
+                  checked={selectedAnswer === index}
+                  onChange={() => handleAnswer(index)}
+                />
+                {option}
+              </div>
+            </label>
+          ))}
+        </div>
+        <button
+          onClick={handleNext}
+          disabled={selectedAnswer === null}
+          className={`w-full mt-6 py-4 rounded-xl font-semibold text-lg
+            transition-all duration-200 transform hover:scale-105
+            ${selectedAnswer === null
+              ? 'bg-gray-500 cursor-not-allowed'
+              : 'bg-gradient-to-r from-purple-700 to-blue-700 hover:shadow-lg'
+            }`}
+        >
+          {currentQuestion === questions.length - 1 ? 'Submit Quiz' : 'Next Question'}
+        </button>
       </div>
-      <button
-        onClick={handleNext}
-        disabled={selectedAnswer === null}
-        className={`w-full py-4 rounded-xl text-white font-semibold text-lg
-          transition-all duration-200 transform hover:scale-[1.02]
-          ${selectedAnswer === null
-            ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg'
-          }`}
-      >
-        {currentQuestion === questions.length - 1 ? 'Submit Quiz' : 'Next Question'}
-      </button>
     </div>
   );
 }
