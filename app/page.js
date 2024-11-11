@@ -1,143 +1,51 @@
 'use client';
 
-import React, { useState } from 'react';
-
-const questions = [
-  {
-    question: "Which of these is NOT one of the lobes of the human brain?",
-    options: ["Temporal lobe", "Parietal lobe", "Cognitive lobe", "Occipital lobe"],
-    correct: 2,
-    explanation: "The cognitive lobe is not a part of the brain. The main lobes are frontal, parietal, temporal, and occipital."
-  },
-  {
-    question: "Who is considered the father of psychoanalysis?",
-    options: ["Carl Jung", "Sigmund Freud", "Ivan Pavlov", "B.F. Skinner"],
-    correct: 1,
-    explanation: "Sigmund Freud developed psychoanalysis in the late 19th century."
-  },
-  {
-    question: "Which psychological perspective emphasizes observable behaviors?",
-    options: ["Psychodynamic", "Behaviorism", "Humanistic", "Cognitive"],
-    correct: 1,
-    explanation: "Behaviorism focuses on observable behaviors rather than internal mental states."
-  },
-  {
-    question: "What is the primary function of neurotransmitters?",
-    options: ["Blood circulation", "Chemical messaging", "Tissue repair", "Energy production"],
-    correct: 1,
-    explanation: "Neurotransmitters are chemicals that transmit signals between nerve cells."
-  },
-  {
-    question: "Which theory is associated with classical conditioning?",
-    options: ["Maslow's hierarchy", "Pavlov's dogs", "Freud's id", "Jung's archetypes"],
-    correct: 1,
-    explanation: "Pavlov discovered classical conditioning through his experiments with dogs."
-  },
-  {
-    question: "What is the primary function of the hippocampus?",
-    options: ["Memory formation", "Motor control", "Visual processing", "Language"],
-    correct: 0,
-    explanation: "The hippocampus plays a crucial role in forming and organizing memories."
-  },
-  {
-    question: "Which disorder is characterized by extreme mood swings?",
-    options: ["Anxiety", "Depression", "Bipolar disorder", "Schizophrenia"],
-    correct: 2,
-    explanation: "Bipolar disorder involves alternating periods of mania and depression."
-  },
-  {
-    question: "What is the concept of 'nature vs. nurture' about?",
-    options: ["Learning styles", "Genetics vs. environment", "Teaching methods", "Brain development"],
-    correct: 1,
-    explanation: "This debate concerns the relative influence of genes versus environmental factors."
-  },
-  {
-    question: "Which research method provides the strongest evidence for causation?",
-    options: ["Case study", "Correlational study", "Experimental study", "Observational study"],
-    correct: 2,
-    explanation: "Experimental studies with controlled variables can establish cause-and-effect relationships."
-  },
-  {
-    question: "What is the primary function of the amygdala?",
-    options: ["Emotion processing", "Memory storage", "Motor control", "Language processing"],
-    correct: 0,
-    explanation: "The amygdala plays a key role in processing emotions, especially fear."
-  },
-  {
-    question: "Which psychologist developed the theory of cognitive development stages?",
-    options: ["Freud", "Piaget", "Skinner", "Watson"],
-    correct: 1,
-    explanation: "Jean Piaget developed the theory of cognitive developmental stages in children."
-  },
-  {
-    question: "What is cognitive dissonance?",
-    options: ["Memory loss", "Mental conflict", "Learning disability", "Attention deficit"],
-    correct: 1,
-    explanation: "Cognitive dissonance occurs when holding contradictory beliefs causes mental discomfort."
-  },
-  {
-    question: "Which part of the brain is responsible for balance and coordination?",
-    options: ["Cerebellum", "Thalamus", "Hypothalamus", "Medulla"],
-    correct: 0,
-    explanation: "The cerebellum coordinates movement and maintains balance."
-  },
-  {
-    question: "What is the Stanford Prison Experiment known for?",
-    options: ["Learning theory", "Memory research", "Social roles", "Child development"],
-    correct: 2,
-    explanation: "It demonstrated how people adapt to social roles and authority positions."
-  },
-  {
-    question: "Which neurotransmitter is associated with pleasure and reward?",
-    options: ["Serotonin", "Dopamine", "GABA", "Acetylcholine"],
-    correct: 1,
-    explanation: "Dopamine is involved in reward, pleasure, and motivation."
-  },
-  {
-    question: "What is the main focus of positive psychology?",
-    options: ["Mental illness", "Well-being", "Childhood trauma", "Brain disorders"],
-    correct: 1,
-    explanation: "Positive psychology focuses on well-being, happiness, and human strengths."
-  },
-  {
-    question: "Which defense mechanism involves returning to an earlier stage of development?",
-    options: ["Projection", "Regression", "Repression", "Rationalization"],
-    correct: 1,
-    explanation: "Regression is returning to an earlier developmental stage when under stress."
-  },
-  {
-    question: "What is the primary function of the prefrontal cortex?",
-    options: ["Executive function", "Emotion", "Memory", "Vision"],
-    correct: 0,
-    explanation: "The prefrontal cortex handles executive functions like planning and decision-making."
-  },
-  {
-    question: "Which approach emphasizes free will and self-actualization?",
-    options: ["Behavioral", "Humanistic", "Psychodynamic", "Biological"],
-    correct: 1,
-    explanation: "Humanistic psychology emphasizes personal growth and self-actualization."
-  },
-  {
-    question: "What is the recency effect in memory?",
-    options: ["First items remembered", "Middle items remembered", "Last items remembered", "All items forgotten"],
-    correct: 2,
-    explanation: "The recency effect is better recall of the most recently presented items."
-  }
-];
+import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 
 export default function Home() {
+  const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
   const [answerHistory, setAnswerHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Function to load and parse CSV
+    const loadQuestions = async () => {
+      try {
+        const response = await fetch('/questions.csv');
+        const text = await response.text();
+        
+        Papa.parse(text, {
+          header: true,
+          complete: (results) => {
+            const formattedQuestions = results.data.map(row => ({
+              question: row.question,
+              options: [row.option1, row.option2, row.option3, row.option4],
+              correct: parseInt(row.correct),
+              explanation: row.explanation
+            }));
+            setQuestions(formattedQuestions);
+            setLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error('Error loading questions:', error);
+        setLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, []);
 
   const handleAnswer = (index) => {
     setSelectedAnswer(index);
   };
 
   const handleNext = () => {
-    // Save answer history
     setAnswerHistory([...answerHistory, {
       question: questions[currentQuestion].question,
       selectedAnswer: questions[currentQuestion].options[selectedAnswer],
@@ -157,6 +65,14 @@ export default function Home() {
       setShowScore(true);
     }
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen p-8 bg-gray-100 flex items-center justify-center">
+        <div className="text-xl font-bold text-blue-600">Loading Quiz Questions...</div>
+      </main>
+    );
+  }
 
   if (showScore) {
     return (
