@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 
 export default function Page() {
@@ -9,21 +9,18 @@ export default function Page() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
-  const [answerHistory, setAnswerHistory] = useState([]);
+  const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes
+  const [timeLeft, setTimeLeft] = useState(1200); // 20 minutes
 
-  // Load questions
   useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        const response = await fetch('/questions.csv');
-        const text = await response.text();
-        
+    fetch('/questions.csv')
+      .then(response => response.text())
+      .then(text => {
         Papa.parse(text, {
           header: true,
           complete: (results) => {
-            const formattedQuestions = results.data
+            const validQuestions = results.data
               .filter(row => row.question)
               .map(row => ({
                 question: row.question,
@@ -31,42 +28,36 @@ export default function Page() {
                 correct: parseInt(row.correct),
                 explanation: row.explanation
               }));
-            setQuestions(formattedQuestions);
+            setQuestions(validQuestions);
             setLoading(false);
           }
         });
-      } catch (error) {
+      })
+      .catch(error => {
         console.error('Error loading questions:', error);
         setLoading(false);
-      }
-    };
-
-    loadQuestions();
+      });
   }, []);
 
-  // Timer
   useEffect(() => {
-    if (!loading && timeLeft === 0) {
-      handleSubmit();
-      return;
-    }
+    if (loading) return;
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleFinish();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, loading]);
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  }, [loading]);
 
   const handleAnswer = (index) => {
     setSelectedAnswer(index);
-    // Play click sound
     if (typeof window !== 'undefined') {
       const audio = new Audio('/sounds/click.mp3');
       audio.volume = 0.3;
@@ -75,43 +66,43 @@ export default function Page() {
   };
 
   const handleNext = () => {
-    // Play correct/incorrect sound
+    const isCorrect = selectedAnswer === questions[currentQuestion].correct;
+    
     if (typeof window !== 'undefined') {
-      const isCorrect = selectedAnswer === questions[currentQuestion].correct;
       const audio = new Audio(isCorrect ? '/sounds/correct.mp3' : '/sounds/incorrect.mp3');
       audio.volume = 0.4;
       audio.play().catch(() => {});
     }
 
-    // Save answer
-    setAnswerHistory([...answerHistory, {
+    setAnswers([...answers, {
       question: questions[currentQuestion].question,
-      selectedAnswer: questions[currentQuestion].options[selectedAnswer],
-      correctAnswer: questions[currentQuestion].options[questions[currentQuestion].correct],
-      isCorrect: selectedAnswer === questions[currentQuestion].correct,
+      selected: questions[currentQuestion].options[selectedAnswer],
+      correct: questions[currentQuestion].options[questions[currentQuestion].correct],
+      isCorrect: isCorrect,
       explanation: questions[currentQuestion].explanation
     }]);
 
-    if (selectedAnswer === questions[currentQuestion].correct) {
-      setScore(score + 1);
-    }
+    if (isCorrect) setScore(score + 1);
 
-    setSelectedAnswer(null);
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
+      setSelectedAnswer(null);
     } else {
-      handleSubmit();
+      handleFinish();
     }
   };
 
-  const handleSubmit = () => {
+  const handleFinish = () => {
     setShowScore(true);
-    // Play finish sound
     if (typeof window !== 'undefined') {
       const audio = new Audio('/sounds/finish.mp3');
       audio.volume = 0.5;
       audio.play().catch(() => {});
     }
+  };
+
+  const formatTime = (seconds) => {
+    return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -134,18 +125,15 @@ export default function Page() {
           
           
             
-              Final Score: {score} out of {questions.length}
+              Score: {score} out of {questions.length}
             
             
               {(score / questions.length * 100).toFixed(1)}%
             
-            
-              Time taken: {20 - Math.ceil(timeLeft / 60)} minutes
-            
           
 
           
-            {answerHistory.map((answer, index) => (
+            {answers.map((answer, index) => (
               
                 
                   
@@ -156,11 +144,11 @@ export default function Page() {
                   
                 
                 
-                  Your answer: {answer.selectedAnswer}
+                  Your answer: {answer.selected}
                 
                 {!answer.isCorrect && (
                   
-                    Correct answer: {answer.correctAnswer}
+                    Correct answer: {answer.correct}
                   
                 )}
                 
