@@ -11,7 +11,7 @@ export default function Page() {
   const [showScore, setShowScore] = useState(false);
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(1200); // 20 minutes
+  const [timeLeft, setTimeLeft] = useState(1200);
 
   useEffect(() => {
     fetch('/questions.csv')
@@ -34,16 +34,15 @@ export default function Page() {
         });
       })
       .catch(error => {
-        console.error('Error loading questions:', error);
+        console.error('Error:', error);
         setLoading(false);
       });
   }, []);
 
   useEffect(() => {
     if (loading) return;
-
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
           handleFinish();
@@ -52,27 +51,25 @@ export default function Page() {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [loading]);
 
-  const handleAnswer = (index) => {
-    setSelectedAnswer(index);
+  const playSound = (type) => {
     if (typeof window !== 'undefined') {
-      const audio = new Audio('/sounds/click.mp3');
-      audio.volume = 0.3;
+      const audio = new Audio(`/sounds/${type}.mp3`);
+      audio.volume = type === 'click' ? 0.3 : 0.4;
       audio.play().catch(() => {});
     }
   };
 
+  const handleAnswer = (index) => {
+    playSound('click');
+    setSelectedAnswer(index);
+  };
+
   const handleNext = () => {
     const isCorrect = selectedAnswer === questions[currentQuestion].correct;
-    
-    if (typeof window !== 'undefined') {
-      const audio = new Audio(isCorrect ? '/sounds/correct.mp3' : '/sounds/incorrect.mp3');
-      audio.volume = 0.4;
-      audio.play().catch(() => {});
-    }
+    playSound(isCorrect ? 'correct' : 'incorrect');
 
     setAnswers([...answers, {
       question: questions[currentQuestion].question,
@@ -94,11 +91,7 @@ export default function Page() {
 
   const handleFinish = () => {
     setShowScore(true);
-    if (typeof window !== 'undefined') {
-      const audio = new Audio('/sounds/finish.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-    }
+    playSound('finish');
   };
 
   const formatTime = (seconds) => {
