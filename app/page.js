@@ -1,25 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 
-const QUIZ_TIME = 20 * 60;
-
-// Sound effects configuration
-const initSoundEffects = () => {
-  if (typeof Audio !== 'undefined') {
-    return {
-      click: new Audio('/sounds/click.mp3'),
-      correct: new Audio('/sounds/correct.mp3'),
-      incorrect: new Audio('/sounds/incorrect.mp3'),
-      finish: new Audio('/sounds/finish.mp3'),
-      timerWarning: new Audio('/sounds/timer-warning.mp3'),
-    };
-  }
-  return null;
-};
-
-export default function Quiz() {
+export default function Page() {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -27,25 +11,9 @@ export default function Quiz() {
   const [showScore, setShowScore] = useState(false);
   const [answerHistory, setAnswerHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const [hasPlayedWarning, setHasPlayedWarning] = useState(false);
-  const [soundEffects, setSoundEffects] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes
 
-  // Initialize sound effects
-  useEffect(() => {
-    setSoundEffects(initSoundEffects());
-  }, []);
-
-  const playSound = useCallback((soundName) => {
-    if (isSoundEnabled && soundEffects && soundEffects[soundName]) {
-      const sound = soundEffects[soundName];
-      sound.currentTime = 0;
-      sound.volume = soundName === 'click' ? 0.3 : 0.4;
-      sound.play().catch(err => console.log('Sound play error:', err));
-    }
-  }, [isSoundEnabled, soundEffects]);
-
+  // Load questions
   useEffect(() => {
     const loadQuestions = async () => {
       try {
@@ -76,16 +44,11 @@ export default function Quiz() {
     loadQuestions();
   }, []);
 
+  // Timer
   useEffect(() => {
     if (!loading && timeLeft === 0) {
-      playSound('finish');
       handleSubmit();
       return;
-    }
-
-    if (timeLeft === 300 && !hasPlayedWarning) {
-      playSound('timerWarning');
-      setHasPlayedWarning(true);
     }
 
     const timer = setInterval(() => {
@@ -93,7 +56,7 @@ export default function Quiz() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, loading, hasPlayedWarning, playSound]);
+  }, [timeLeft, loading]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -102,31 +65,37 @@ export default function Quiz() {
   };
 
   const handleAnswer = (index) => {
-    playSound('click');
     setSelectedAnswer(index);
-  };
-
-  const saveAnswer = () => {
-    if (selectedAnswer !== null) {
-      const isCorrect = selectedAnswer === questions[currentQuestion].correct;
-      playSound(isCorrect ? 'correct' : 'incorrect');
-
-      setAnswerHistory([...answerHistory, {
-        question: questions[currentQuestion].question,
-        selectedAnswer: questions[currentQuestion].options[selectedAnswer],
-        correctAnswer: questions[currentQuestion].options[questions[currentQuestion].correct],
-        isCorrect: isCorrect,
-        explanation: questions[currentQuestion].explanation
-      }]);
-
-      if (isCorrect) {
-        setScore(score + 1);
-      }
+    // Play click sound
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('/sounds/click.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
     }
   };
 
   const handleNext = () => {
-    saveAnswer();
+    // Play correct/incorrect sound
+    if (typeof window !== 'undefined') {
+      const isCorrect = selectedAnswer === questions[currentQuestion].correct;
+      const audio = new Audio(isCorrect ? '/sounds/correct.mp3' : '/sounds/incorrect.mp3');
+      audio.volume = 0.4;
+      audio.play().catch(() => {});
+    }
+
+    // Save answer
+    setAnswerHistory([...answerHistory, {
+      question: questions[currentQuestion].question,
+      selectedAnswer: questions[currentQuestion].options[selectedAnswer],
+      correctAnswer: questions[currentQuestion].options[questions[currentQuestion].correct],
+      isCorrect: selectedAnswer === questions[currentQuestion].correct,
+      explanation: questions[currentQuestion].explanation
+    }]);
+
+    if (selectedAnswer === questions[currentQuestion].correct) {
+      setScore(score + 1);
+    }
+
     setSelectedAnswer(null);
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
@@ -136,15 +105,13 @@ export default function Quiz() {
   };
 
   const handleSubmit = () => {
-    if (selectedAnswer !== null) {
-      saveAnswer();
-    }
     setShowScore(true);
-  };
-
-  const toggleSound = () => {
-    playSound('click');
-    setIsSoundEnabled(!isSoundEnabled);
+    // Play finish sound
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('/sounds/finish.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+    }
   };
 
   if (loading) {
@@ -178,7 +145,6 @@ export default function Quiz() {
           
 
           
-            Question Review:
             {answerHistory.map((answer, index) => (
               
                 
@@ -208,34 +174,10 @@ export default function Quiz() {
     );
   }
 
-  if (questions.length === 0) {
-    return (
-      
-        
-          Error: No questions loaded
-        
-      
-    );
-  }
-
   return (
     
       
         
-          
-            
-              {isSoundEnabled ? (
-                
-                  
-                
-              ) : (
-                
-                  
-                
-              )}
-            
-          
-
           
             
               Psychology Admission Quiz
