@@ -20,7 +20,7 @@ export default function Page() {
         Papa.parse(text, {
           header: true,
           complete: (results) => {
-            const validQuestions = results.data
+            const allQuestions = results.data
               .filter(row => row.question)
               .map(row => ({
                 question: row.question,
@@ -28,7 +28,10 @@ export default function Page() {
                 correct: parseInt(row.correct),
                 explanation: row.explanation
               }));
-            setQuestions(validQuestions);
+
+            // Select 20 random questions
+            const randomQuestions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 20);
+            setQuestions(randomQuestions);
             setLoading(false);
           }
         });
